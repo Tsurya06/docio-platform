@@ -1,0 +1,41 @@
+{
+  "name": "docio-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "REST API for the Doctor Appointment Booking Platform",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "nodemon --env-file-if-exists=.env src/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^5.0.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.5.0",
+    "nodemailer": "^9.0.3",
+    "pino": "^9.3.2",
+    "pino-http": "^10.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.7.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.8.0",
+    "nodemon": "^3.1.4",
+    "pino-pretty": "^11.2.1",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=20.12.0"
+  }
+}
