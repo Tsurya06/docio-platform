@@ -27,8 +27,10 @@ export function clearAccessToken() {
   accessToken = null;
 }
 
-const RAW_BASE_URL = import.meta.env.VITE_API_URL || '';
-export const BASE_URL = RAW_BASE_URL || '/api/v1';
+const RAW_BASE_URL = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+export const BASE_URL = RAW_BASE_URL
+  ? (RAW_BASE_URL.endsWith('/api/v1') ? RAW_BASE_URL : `${RAW_BASE_URL}/api/v1`)
+  : '/api/v1';
 
 /**
  * Inner fetchBaseQuery — talks to the API with the in-memory access token in the
