@@ -147,3 +147,6 @@ dist
 .yarn/install-state.gz
 .pnp.*.claude/
 .claude/
+
+# Vercel dynamic config
+client/vercel.json
