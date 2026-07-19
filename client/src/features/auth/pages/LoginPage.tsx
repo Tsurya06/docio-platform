@@ -45,11 +45,12 @@ export default function LoginPage() {
       subtitle="Book and manage your doctor appointments in one place."
       error={submitError}
       footer={
-        <>
-          Don&rsquo;t have an account? <Link to="/register">Create one</Link>
-          <br />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+          <div>
+            Don&rsquo;t have an account? <Link to="/register">Create one</Link>
+          </div>
           <Link to="/forgot-password">Forgot password?</Link>
-        </>
+        </div>
       }
     >
       <Form
