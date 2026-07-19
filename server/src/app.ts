@@ -1,0 +1,105 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import pinoHttp from 'pino-http';
+import { rateLimit } from 'express-rate-limit';
+import { env } from './config/env.js';
+import { logger } from './config/logger.js';
+import { notFound } from './middleware/notFound.middleware.js';
+import { errorHandler } from './middleware/error.middleware.js';
+import { healthRouter } from './features/health/health.routes.js';
+import { authRouter } from './features/auth/auth.routes.js';
+import { patientRouter } from './features/patient/patient.routes.js';
+import { doctorRouter } from './features/doctor/doctor.routes.js';
+import { appointmentRouter } from './features/appointment/appointment.routes.js';
+import { adminRouter } from './features/admin/admin.routes.js';
+
+export function createApp(): express.Express {
+  const app = express();
+
+  app.set('trust proxy', 1);
+
+  const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 300,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      status: 'error',
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many requests, please try again later.',
+    },
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    limit: 15,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      status: 'error',
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many login or registration attempts, please try again after a minute.',
+    },
+  });
+
+  app.use('/api', globalLimiter);
+  app.use('/api/v1/auth/login', authLimiter);
+  app.use('/api/v1/auth/register', authLimiter);
+
+  app.use(helmet());
+  const allowedOrigins = env.CLIENT_ORIGIN ? [env.CLIENT_ORIGIN.replace(/\/$/, '')] : [];
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+
+        const isAllowed =
+          allowedOrigins.includes(origin) ||
+          origin === 'http://localhost:5173' ||
+          /\.vercel\.app$/.test(origin) ||
+          /\.projects\.vercel\.app$/.test(origin);
+
+        if (isAllowed) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+    }),
+  );
+  app.use(compression());
+  app.use(cookieParser());
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true }));
+  app.use(
+    (pinoHttp as any)({
+      logger,
+      autoLogging: {
+        ignore: (req: any) => req.url === '/api/v1/health',
+      },
+    }),
+  );
+
+  app.get('/', (_req, res) => {
+    res.json({ name: 'Docio API', version: '0.1.0' });
+  });
+
+  app.use('/api/v1/health', healthRouter);
+  app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1/patients', patientRouter);
+  app.use('/api/v1/doctors', doctorRouter);
+  app.use('/api/v1/appointments', appointmentRouter);
+  app.use('/api/v1/admin', adminRouter);
+
+  app.use(notFound);
+  app.use(errorHandler);
+
+  return app;
+}

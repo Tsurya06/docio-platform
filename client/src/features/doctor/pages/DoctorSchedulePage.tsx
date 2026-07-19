@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, List, Tag, Typography, Button, Space, App as AntApp } from 'antd';
 import {
   useListDoctorAppointmentsQuery,
@@ -16,7 +17,8 @@ export default function DoctorSchedulePage() {
   useTitle('My schedule');
   const { message } = AntApp.useApp();
   const serverError = useServerError();
-  const { data, isLoading, error } = useListDoctorAppointmentsQuery({ limit: 200 });
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useListDoctorAppointmentsQuery({ page, limit: 10 });
   const [manage, { isLoading: managing }] = useManageAppointmentMutation();
   const [cancel, { isLoading: cancelling }] = useCancelAppointmentMutation();
 
@@ -49,6 +51,14 @@ export default function DoctorSchedulePage() {
         ) : (
           <List<Appointment>
             dataSource={items}
+            pagination={{
+              current: page,
+              pageSize: 10,
+              total: data?.total ?? items.length,
+              onChange: (p) => setPage(p),
+              showSizeChanger: false,
+              hideOnSinglePage: true,
+            }}
             renderItem={(a) => (
               <List.Item
                 actions={renderActions(a, managing || cancelling, runAction)}

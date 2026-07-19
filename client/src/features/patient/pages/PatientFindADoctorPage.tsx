@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Input, Table, Typography, Button } from 'antd';
+import { Card, Input, Table, Typography, Button, theme } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useSearchDoctorsQuery } from '../../../app/api/doctorApi.js';
@@ -14,6 +14,7 @@ const { Title, Paragraph } = Typography;
 export default function PatientFindADoctorPage() {
   useTitle('Find a doctor');
   const navigate = useNavigate();
+  const { token } = theme.useToken();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 300);
@@ -64,7 +65,7 @@ export default function PatientFindADoctorPage() {
               render: (_, d) => (
                 <div>
                   <strong>{d.specialization}</strong>
-                  <div style={{ color: 'rgba(0,0,0,0.55)', fontSize: 12 }}>
+                  <div style={{ color: token.colorTextDescription, fontSize: 12 }}>
                     {d.qualifications?.join(', ') || 'No qualifications listed'}
                   </div>
                 </div>

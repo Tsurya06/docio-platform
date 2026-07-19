@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Row, Col, Statistic, Tag, Typography, Button, Modal, Form, Input, App as AntApp } from 'antd';
+import { Card, Row, Col, Statistic, Tag, Typography, Button, Modal, Form, Input, App as AntApp, List, theme } from 'antd';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -22,7 +22,10 @@ export default function PatientAppointmentsPage() {
   const navigate = useNavigate();
   const { message } = AntApp.useApp();
   const serverError = useServerError();
-  const { data, isLoading, error } = useListMyAppointmentsQuery({ limit: 200 });
+  const { token } = theme.useToken();
+  const [page, setPage] = useState(1);
+  
+  const { data, isLoading, error } = useListMyAppointmentsQuery({ page, limit: 5 });
   const [cancel, { isLoading: cancelling }] = useCancelAppointmentMutation();
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
@@ -89,33 +92,23 @@ export default function PatientAppointmentsPage() {
             onAction={() => navigate('/app/patient/find-a-doctor')}
           />
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {items.map((a) => {
+          <List
+            itemLayout="horizontal"
+            dataSource={items}
+            pagination={{
+              current: page,
+              pageSize: 5,
+              total: total,
+              onChange: (p) => setPage(p),
+              showSizeChanger: false,
+              hideOnSinglePage: true,
+            }}
+            renderItem={(a) => {
               const active = ACTIVE_STATUSES.includes(a.status);
               return (
-                <li
+                <List.Item
                   key={a._id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                    padding: '12px 0',
-                    borderBottom: '1px solid #f0f0f0',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong>
-                      {a.appointmentDate} · {a.startTime}–{a.endTime}
-                    </strong>
-                    <div style={{ color: 'rgba(0,0,0,0.55)' }}>
-                      {a.reason || '(no reason given)'}
-                    </div>
-                  </div>
-                  <Tag color={STATUS_META[a.status]?.badge}>
-                    {STATUS_META[a.status]?.label ?? a.status}
-                  </Tag>
-                  {active ? (
+                  actions={active ? [
                     <Button
                       danger
                       size="small"
@@ -126,11 +119,29 @@ export default function PatientAppointmentsPage() {
                     >
                       Cancel
                     </Button>
-                  ) : null}
-                </li>
+                  ] : []}
+                >
+                  <List.Item.Meta
+                    title={
+                      <strong>
+                        {a.appointmentDate} · {a.startTime}–{a.endTime}
+                      </strong>
+                    }
+                    description={
+                      <div style={{ color: token.colorTextDescription }}>
+                        {a.reason || '(no reason given)'}
+                      </div>
+                    }
+                  />
+                  <div>
+                    <Tag color={STATUS_META[a.status]?.badge}>
+                      {STATUS_META[a.status]?.label ?? a.status}
+                    </Tag>
+                  </div>
+                </List.Item>
               );
-            })}
-          </ul>
+            }}
+          />
         )}
       </Card>
 
