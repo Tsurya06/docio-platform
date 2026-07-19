@@ -1,6 +1,10 @@
 {
   "private": true,
   "workspaces": ["client", "server"],
+  "optionalDependencies": {
+    "@rollup/rollup-linux-arm64-gnu": "^4.0.0",
+    "@rollup/rollup-linux-x64-gnu": "^4.0.0"
+  },
   "scripts": {
     "install-all": "npm workspaces run install",
     "build":   "npm workspaces run build --if-present",
