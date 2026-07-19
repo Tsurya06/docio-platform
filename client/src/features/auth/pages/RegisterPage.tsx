@@ -61,7 +61,7 @@ export default function RegisterPage() {
         <Form.Item
           name="role"
           label="I am a"
-          rules={[{ required: true, message: 'Pick a role' }]}
+          rules={[{ validator: zodValidator(registerSchema) }]}
           extra="Doctors become searchable only after an admin reviews and approves the profile."
         >
           <Select
@@ -74,36 +74,36 @@ export default function RegisterPage() {
         <Form.Item
           name="firstName"
           label="First name"
-          rules={[{ required: true, message: 'First name is required' }, { max: 60, message: 'Keep names under 60 characters' }]}
+          rules={[{ validator: zodValidator(registerSchema) }]}
         >
           <Input prefix={<UserOutlined />} placeholder="Ada" autoComplete="given-name" />
         </Form.Item>
         <Form.Item
           name="lastName"
           label="Last name"
-          rules={[{ required: true, message: 'Last name is required' }, { max: 60, message: 'Keep names under 60 characters' }]}
+          rules={[{ validator: zodValidator(registerSchema) }]}
         >
           <Input prefix={<UserOutlined />} placeholder="Lovelace" autoComplete="family-name" />
         </Form.Item>
         <Form.Item
           name="email"
           label="Email"
-          rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}
+          rules={[{ validator: zodValidator(registerSchema) }]}
         >
           <Input prefix={<MailOutlined />} placeholder="you@example.com" autoComplete="email" />
         </Form.Item>
         <Form.Item
           name="password"
           label="Password"
-          rules={[
-            { required: true, message: 'Password is required' },
-            { min: 8, message: 'At least 8 characters' },
-            { validator: zodValidator(registerSchema) },
-          ]}
+          rules={[{ validator: zodValidator(registerSchema) }]}
         >
           <Input.Password prefix={<LockOutlined />} placeholder="At least 8 characters" autoComplete="new-password" />
         </Form.Item>
-        <Form.Item name="phone" label="Phone (optional)">
+        <Form.Item 
+          name="phone" 
+          label="Phone (optional)"
+          rules={[{ validator: zodValidator(registerSchema) }]}
+        >
           <Input prefix={<PhoneOutlined />} placeholder="+1 555 0100" autoComplete="tel" />
         </Form.Item>
         <Button type="primary" htmlType="submit" block loading={isLoading}>

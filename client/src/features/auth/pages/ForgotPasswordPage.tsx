@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
         <Form.Item
           name="email"
           label="Email"
-          rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }, { validator: zodValidator(forgotPasswordSchema) }]}
+          rules={[{ validator: zodValidator(forgotPasswordSchema) }]}
         >
           <Input prefix={<MailOutlined />} placeholder="you@example.com" autoComplete="email" />
         </Form.Item>

@@ -63,14 +63,14 @@ export default function LoginPage() {
         <Form.Item
           name="email"
           label="Email"
-          rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Enter a valid email' }]}
+          rules={[{ validator: zodValidator(loginSchema) }]}
         >
           <Input prefix={<MailOutlined />} placeholder="you@example.com" autoComplete="email" />
         </Form.Item>
         <Form.Item
           name="password"
           label="Password"
-          rules={[{ required: true, message: 'Password is required' }, { validator: zodValidator(loginSchema) }]}
+          rules={[{ validator: zodValidator(loginSchema) }]}
         >
           <Input.Password prefix={<LockOutlined />} placeholder="Password" autoComplete="current-password" />
         </Form.Item>

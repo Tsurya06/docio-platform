@@ -83,11 +83,7 @@ export default function ResetPasswordPage() {
         <Form.Item
           name="newPassword"
           label="New password"
-          rules={[
-            { required: true, message: 'New password is required' },
-            { min: 8, message: 'At least 8 characters' },
-            { validator: zodValidator(resetPasswordSchema) },
-          ]}
+          rules={[{ validator: zodValidator(resetPasswordSchema) }]}
         >
           <Input.Password prefix={<LockOutlined />} placeholder="At least 8 characters" autoComplete="new-password" />
         </Form.Item>
