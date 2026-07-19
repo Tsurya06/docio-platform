@@ -148,5 +148,3 @@ dist
 .pnp.*.claude/
 .claude/
 
-# Vercel dynamic config
-client/vercel.json
