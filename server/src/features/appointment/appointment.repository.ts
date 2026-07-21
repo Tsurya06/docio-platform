@@ -36,16 +36,22 @@ export const appointmentRepository = {
     return Appointment.findOne({ _id: id, doctorId });
   },
 
-  async listForPatient(patientId: string | object, { status, date, page, limit }: { status?: string; date?: string; page: number; limit: number }) {
+  async listForPatient(patientId: string | object, { status, date, page, limit }: { status?: string | string[]; date?: string; page: number; limit: number }) {
     const filter: any = { patientId };
-    if (status) filter.status = status;
+    if (status) {
+      if (Array.isArray(status) && status.length) filter.status = { $in: status };
+      else if (typeof status === 'string') filter.status = status;
+    }
     if (date) filter.appointmentDate = date;
     return runQuery(filter, { page, limit });
   },
 
-  async listForDoctor(doctorId: string | object, { status, date, page, limit }: { status?: string; date?: string; page: number; limit: number }) {
+  async listForDoctor(doctorId: string | object, { status, date, page, limit }: { status?: string | string[]; date?: string; page: number; limit: number }) {
     const filter: any = { doctorId };
-    if (status) filter.status = status;
+    if (status) {
+      if (Array.isArray(status) && status.length) filter.status = { $in: status };
+      else if (typeof status === 'string') filter.status = status;
+    }
     if (date) filter.appointmentDate = date;
     return runQuery(filter, { page, limit });
   },

@@ -22,6 +22,7 @@ export interface IDoctorMethods {
   };
   toPublic(): {
     _id: string;
+    user?: { _id: string; firstName: string; lastName?: string; avatar?: string } | null;
     specialization: string;
     qualifications: string[];
     experienceYears: number | null;
@@ -114,8 +115,17 @@ doctorSchema.methods.toProfile = function toProfile(this: IDoctor) {
 };
 
 doctorSchema.methods.toPublic = function toPublic(this: IDoctor) {
+  const user = this.populated('userId') ? (this.userId as any) : null;
   return {
     _id: String(this._id),
+    user: user
+      ? {
+          _id: String(user._id),
+          firstName: user.firstName,
+          lastName: user.lastName,
+          avatar: user.avatar ?? null,
+        }
+      : null,
     specialization: this.specialization,
     qualifications: this.qualifications ?? [],
     experienceYears: this.experienceYears ?? null,

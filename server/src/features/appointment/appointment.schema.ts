@@ -28,7 +28,21 @@ export const manageAppointmentSchema = {
 
 export const listAppointmentsSchema = {
   query: z.object({
-    status: z.enum(APPOINTMENT_STATUS as any as [string, ...string[]]).optional(),
+    status: z.preprocess(
+      (v) => {
+        if (v === undefined || v === null || v === '') return undefined;
+        if (typeof v === 'string') {
+          return v.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+        if (Array.isArray(v)) {
+          return v
+            .flatMap((item) => (typeof item === 'string' ? item.split(',').map((s) => s.trim()) : item))
+            .filter(Boolean);
+        }
+        return v;
+      },
+      z.array(z.enum(APPOINTMENT_STATUS as any as [string, ...string[]])).optional(),
+    ).optional(),
     date: dateStr.optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(200).default(20),

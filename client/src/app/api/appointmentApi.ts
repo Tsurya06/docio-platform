@@ -2,6 +2,11 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQuery } from './baseQuery.js';
 import type { Appointment } from '../../types/index.js';
 
+interface RawPaginatedResponse<T> {
+  data: T[];
+  meta?: { total?: number };
+}
+
 interface AppointmentResponse {
   data: Appointment;
 }
@@ -24,7 +29,21 @@ export const appointmentApi = createApi({
       invalidatesTags: ['Appointment'],
     }),
     listMyAppointments: build.query<AppointmentListResponse, Record<string, unknown> | void>({
-      query: (params) => ({ url: '/appointments/mine', params: params ?? undefined }),
+      query: (params) => {
+        if (!params) return { url: '/appointments/mine' };
+        const { status, ...rest } = params;
+        const queryParams: Record<string, unknown> = { ...rest };
+        if (Array.isArray(status) && status.length) {
+          queryParams.status = status.join(',');
+        } else if (status) {
+          queryParams.status = status;
+        }
+        return { url: '/appointments/mine', params: queryParams };
+      },
+      transformResponse: (response: RawPaginatedResponse<Appointment>): AppointmentListResponse => ({
+        data: response.data,
+        total: response.meta?.total ?? response.data?.length ?? 0,
+      }),
       providesTags: ['Appointment'],
     }),
     getAppointment: build.query<AppointmentResponse, string>({
@@ -36,7 +55,21 @@ export const appointmentApi = createApi({
       invalidatesTags: ['Appointment'],
     }),
     listDoctorAppointments: build.query<AppointmentListResponse, Record<string, unknown> | void>({
-      query: (params) => ({ url: '/doctors/me/appointments', params: params ?? undefined }),
+      query: (params) => {
+        if (!params) return { url: '/doctors/me/appointments' };
+        const { status, ...rest } = params;
+        const queryParams: Record<string, unknown> = { ...rest };
+        if (Array.isArray(status) && status.length) {
+          queryParams.status = status.join(',');
+        } else if (status) {
+          queryParams.status = status;
+        }
+        return { url: '/doctors/me/appointments', params: queryParams };
+      },
+      transformResponse: (response: RawPaginatedResponse<Appointment>): AppointmentListResponse => ({
+        data: response.data,
+        total: response.meta?.total ?? response.data?.length ?? 0,
+      }),
       providesTags: ['Appointment'],
     }),
     manageAppointment: build.mutation<AppointmentResponse, { id: string; body: Record<string, unknown> }>({

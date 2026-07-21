@@ -51,6 +51,7 @@ export const adminService = {
   async listDoctors(query: any) {
     const filters: any = {};
     if (query.isApproved !== undefined) filters.isApproved = query.isApproved === 'true';
+    if (query.isActive !== undefined) filters.isActive = query.isActive === 'true';
     if (query.specialization) filters.specialization = query.specialization;
     return doctorService.listForAdmin({ ...query, ...filters });
   },
@@ -64,7 +65,10 @@ export const adminService = {
   },
 
   async listPatients(query: any) {
-    return patientService.listForAdmin(query);
+    const filters: any = {};
+    if (query.search) filters.search = query.search;
+    if (query.gender) filters.gender = query.gender;
+    return patientService.listForAdmin({ ...query, ...filters });
   },
 
   async listAppointments(query: any) {

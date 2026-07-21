@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { doctorService } from './doctor.service.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import type { IDoctor } from './doctor.model.js';
 
 export async function getMe(req: Request, res: Response): Promise<Response> {
   const doctor = await doctorService.getProfile(req.user!.id);
@@ -23,10 +24,10 @@ export async function getPublicProfile(req: Request, res: Response): Promise<Res
 }
 
 export async function search(req: Request, res: Response): Promise<Response> {
-  const result = await doctorService.search(req.query as any);
+  const result = await doctorService.search(req.query);
   return res.json(
     ApiResponse.paginated({
-      items: result.items.map((d: any) => d.toPublic()),
+      items: result.items.map((d: IDoctor) => d.toPublic()),
       page: result.page,
       limit: result.limit,
       total: result.total,

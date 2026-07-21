@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Card, Table, Tag, Typography, Select, Space } from 'antd';
+import { Card, Table, Tag, Typography, Select, Space, DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import { useSearchParams } from 'react-router-dom';
 import { useListAppointmentsQuery } from '../../../app/api/adminApi.js';
 import { STATUS_META, STATUS } from '../../../constants/appointmentStatus.js';
 import { useTitle } from '../../../hooks/useTitle.js';
@@ -13,15 +14,43 @@ const STATUS_OPTIONS = Object.values(STATUS).map((value) => ({
   label: STATUS_META[value]?.label ?? value,
 }));
 
+function parseAppointmentStatuses(param: string | null): AppointmentStatus[] | undefined {
+  if (!param) return undefined;
+  const validValues = Object.values(STATUS) as string[];
+  const parsed = param
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s): s is AppointmentStatus => validValues.includes(s));
+  return parsed.length ? parsed : undefined;
+}
+
 export default function AdminAppointmentsPage() {
   useTitle('Appointments');
-  const [page, setPage] = useState(1);
-  const [statuses, setStatuses] = useState<AppointmentStatus[] | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get('page')) || 1;
+  const statuses = parseAppointmentStatuses(searchParams.get('status'));
+  const dateStr = searchParams.get('date') ?? undefined;
+
+  const updateParams = (newParams: Record<string, string | number | undefined | null>) => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      Object.entries(newParams).forEach(([key, val]) => {
+        if (val === undefined || val === null || val === '') {
+          updated.delete(key);
+        } else {
+          updated.set(key, String(val));
+        }
+      });
+      return updated;
+    }, { replace: true });
+  };
 
   const { data, isLoading, error, refetch } = useListAppointmentsQuery({
     page,
     limit: 20,
     status: statuses,
+    date: dateStr || undefined,
   });
 
   const items = data?.data ?? [];
@@ -34,18 +63,27 @@ export default function AdminAppointmentsPage() {
 
       <Card>
         <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Filter by status"
-            style={{ minWidth: 280 }}
-            value={statuses ?? []}
-            onChange={(v) => {
-              setPage(1);
-              setStatuses(v?.length ? (v as AppointmentStatus[]) : undefined);
-            }}
-            options={STATUS_OPTIONS}
-          />
+          <Space wrap style={{ gap: 12 }}>
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Filter by status"
+              style={{ minWidth: 280 }}
+              value={statuses ?? []}
+              onChange={(v) => {
+                updateParams({ status: v?.length ? v.join(',') : undefined, page: 1 });
+              }}
+              options={STATUS_OPTIONS}
+            />
+            <DatePicker
+              placeholder="Filter by date"
+              style={{ width: 180 }}
+              value={dateStr ? dayjs(dateStr) : null}
+              onChange={(_, dateStrVal) => {
+                updateParams({ date: (dateStrVal as string) || undefined, page: 1 });
+              }}
+            />
+          </Space>
         </Space>
         <Table<Appointment>
           rowKey="_id"
@@ -55,7 +93,7 @@ export default function AdminAppointmentsPage() {
             current: page,
             pageSize: 20,
             total,
-            onChange: (p) => setPage(p),
+            onChange: (p) => updateParams({ page: p }),
             showSizeChanger: false,
           }}
           locale={{

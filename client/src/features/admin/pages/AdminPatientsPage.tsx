@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Card, Table, Typography, Input } from 'antd';
+import { Card, Table, Typography, Input, Select, Space } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import { useListPatientsQuery } from '../../../app/api/adminApi.js';
 import { useDebounce } from '../../../hooks/useDebounce.js';
 import { useTitle } from '../../../hooks/useTitle.js';
@@ -11,10 +11,33 @@ const { Title, Paragraph } = Typography;
 
 export default function AdminPatientsPage() {
   useTitle('Patients');
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get('page')) || 1;
+  const search = searchParams.get('search') ?? '';
+  const gender = searchParams.get('gender') ?? undefined;
   const debounced = useDebounce(search, 300);
-  const { data, isLoading, error, refetch } = useListPatientsQuery({ page, limit: 10, search: debounced || undefined });
+
+  const updateParams = (newParams: Record<string, string | number | undefined | null>) => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      Object.entries(newParams).forEach(([key, val]) => {
+        if (val === undefined || val === null || val === '') {
+          updated.delete(key);
+        } else {
+          updated.set(key, String(val));
+        }
+      });
+      return updated;
+    }, { replace: true });
+  };
+
+  const { data, isLoading, error, refetch } = useListPatientsQuery({
+    page,
+    limit: 10,
+    search: debounced || undefined,
+    gender: gender || undefined,
+  });
 
   const items = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -25,14 +48,28 @@ export default function AdminPatientsPage() {
       <Paragraph type="secondary">Every patient registered through the public sign-up form.</Paragraph>
 
       <Card>
-        <Input
-          allowClear
-          prefix={<SearchOutlined />}
-          placeholder="Search by name"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ marginBottom: 16 }}
-        />
+        <Space style={{ marginBottom: 16, width: '100%', gap: 12 }} wrap>
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Search by patient name or email..."
+            value={search}
+            onChange={(e) => updateParams({ search: e.target.value, page: 1 })}
+            style={{ width: 260 }}
+          />
+          <Select
+            allowClear
+            placeholder="Filter by gender"
+            style={{ width: 160 }}
+            value={gender}
+            onChange={(v) => updateParams({ gender: v || undefined, page: 1 })}
+            options={[
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+              { value: 'other', label: 'Other' },
+            ]}
+          />
+        </Space>
         <Table<PatientProfile>
           rowKey="_id"
           loading={isLoading}
@@ -41,7 +78,7 @@ export default function AdminPatientsPage() {
             current: page,
             pageSize: 10,
             total,
-            onChange: (p) => setPage(p),
+            onChange: (p) => updateParams({ page: p }),
             showSizeChanger: false,
           }}
           locale={{

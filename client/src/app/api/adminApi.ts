@@ -8,6 +8,11 @@ interface DashboardResponse {
   };
 }
 
+interface RawPaginatedResponse<T> {
+  data: T[];
+  meta?: { total?: number };
+}
+
 interface DoctorListResponse {
   data: DoctorProfile[];
   total?: number;
@@ -37,6 +42,10 @@ export const adminApi = createApi({
     }),
     listDoctors: build.query<DoctorListResponse, Record<string, unknown> | void>({
       query: (params) => ({ url: '/admin/doctors', params: params ?? undefined }),
+      transformResponse: (response: RawPaginatedResponse<DoctorProfile>): DoctorListResponse => ({
+        data: response.data,
+        total: response.meta?.total ?? response.data?.length ?? 0,
+      }),
       providesTags: ['DoctorList'],
     }),
     manageDoctor: build.mutation<DoctorProfile, { id: string; body: Record<string, unknown> }>({
@@ -45,10 +54,28 @@ export const adminApi = createApi({
     }),
     listPatients: build.query<PatientListResponse, Record<string, unknown> | void>({
       query: (params) => ({ url: '/admin/patients', params: params ?? undefined }),
+      transformResponse: (response: RawPaginatedResponse<PatientProfile>): PatientListResponse => ({
+        data: response.data,
+        total: response.meta?.total ?? response.data?.length ?? 0,
+      }),
       providesTags: ['PatientList'],
     }),
     listAppointments: build.query<AppointmentListResponse, Record<string, unknown> | void>({
-      query: (params) => ({ url: '/admin/appointments', params: params ?? undefined }),
+      query: (params) => {
+        if (!params) return { url: '/admin/appointments' };
+        const { status, ...rest } = params;
+        const queryParams: Record<string, unknown> = { ...rest };
+        if (Array.isArray(status) && status.length) {
+          queryParams.status = status.join(',');
+        } else if (status) {
+          queryParams.status = status;
+        }
+        return { url: '/admin/appointments', params: queryParams };
+      },
+      transformResponse: (response: RawPaginatedResponse<Appointment>): AppointmentListResponse => ({
+        data: response.data,
+        total: response.meta?.total ?? response.data?.length ?? 0,
+      }),
       providesTags: ['AppointmentList'],
     }),
   }),

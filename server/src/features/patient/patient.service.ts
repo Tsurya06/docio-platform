@@ -37,28 +37,29 @@ export const patientService = {
     return updated.toProfile();
   },
 
-  async listForAdmin({ search, page, limit }: { search?: string; page: number; limit: number }) {
+  async listForAdmin({ search, gender, page, limit }: { search?: string; gender?: string; page: number; limit: number }) {
     const filter: any = {};
+    if (gender) {
+      filter.gender = gender;
+    }
     if (search) {
       const searchTerms = search.trim().split(/\s+/).filter(term => term.length > 0);
 
-      if (searchTerms.length === 0) {
-        return patientRepository.listForAdmin({ filter, page, limit });
+      if (searchTerms.length > 0) {
+        const regexConditions = searchTerms.map(term => {
+          const re = new RegExp(escapeRegex(term), 'i');
+          return {
+            $or: [
+              { firstName: re },
+              { lastName: re },
+              { email: re }
+            ]
+          };
+        });
+
+        const users = await User.find({ $and: regexConditions }, { _id: 1 }).lean();
+        filter.userId = { $in: users.map((u) => u._id) };
       }
-
-      const regexConditions = searchTerms.map(term => {
-        const re = new RegExp(escapeRegex(term), 'i');
-        return {
-          $or: [
-            { firstName: re },
-            { lastName: re },
-            { email: re }
-          ]
-        };
-      });
-
-      const users = await User.find({ $and: regexConditions }, { _id: 1 }).lean();
-      filter.userId = { $in: users.map((u) => u._id) };
     }
     return patientRepository.listForAdmin({ filter, page, limit });
   },

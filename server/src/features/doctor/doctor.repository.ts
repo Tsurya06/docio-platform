@@ -33,6 +33,7 @@ export const doctorRepository = {
   async search({
     search,
     specialization,
+    date,
     page,
     limit,
     sort,
@@ -40,6 +41,7 @@ export const doctorRepository = {
   }: {
     search?: string;
     specialization?: string;
+    date?: string;
     page: number;
     limit: number;
     sort: string;
@@ -47,6 +49,18 @@ export const doctorRepository = {
   }) {
     const filter: any = { isApproved: true, isActive: true };
     if (specialization) filter.specialization = specialization;
+
+    if (date) {
+      const [y, m, d] = date.split('-').map(Number);
+      if (y && m && d) {
+        const utcDate = new Date(Date.UTC(y, m - 1, d));
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayOfWeek = days[utcDate.getUTCDay()];
+        if (dayOfWeek) {
+          filter.workingDays = dayOfWeek;
+        }
+      }
+    }
 
     if (search) {
       const re = new RegExp(escapeRegex(search), 'i');
@@ -60,7 +74,8 @@ export const doctorRepository = {
     const sortSpec: any = { [sort]: order === 'asc' ? 1 : -1 };
 
     const [items, total] = await Promise.all([
-      Doctor.find(filter, { userId: 0, isApproved: 0, isActive: 0 })
+      Doctor.find(filter)
+        .populate('userId', 'firstName lastName email avatar')
         .sort(sortSpec)
         .skip((page - 1) * limit)
         .limit(limit),
@@ -72,17 +87,20 @@ export const doctorRepository = {
 
   async listForAdmin({
     isApproved,
+    isActive,
     specialization,
     page,
     limit,
   }: {
     isApproved?: boolean;
+    isActive?: boolean;
     specialization?: string;
     page: number;
     limit: number;
   }) {
     const filter: any = {};
     if (typeof isApproved === 'boolean') filter.isApproved = isApproved;
+    if (typeof isActive === 'boolean') filter.isActive = isActive;
     if (specialization) filter.specialization = specialization;
 
     const [items, total] = await Promise.all([

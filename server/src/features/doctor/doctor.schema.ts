@@ -27,6 +27,7 @@ export const searchDoctorsSchema = {
   query: z.object({
     search: z.string().trim().max(200).optional(),
     specialization: z.string().trim().max(100).optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(200).default(10),
     sort: z.enum(['rating', 'experienceYears', 'consultationFee', 'totalAppointments']).default('rating'),

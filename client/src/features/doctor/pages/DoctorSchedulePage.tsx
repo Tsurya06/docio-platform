@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Card, List, Tag, Typography, Button, Space, App as AntApp } from 'antd';
+import { Card, List, Tag, Typography, Button, Space, App as AntApp, DatePicker, Select } from 'antd';
+import dayjs from 'dayjs';
+import { useSearchParams } from 'react-router-dom';
 import {
   useListDoctorAppointmentsQuery,
   useManageAppointmentMutation,
   useCancelAppointmentMutation,
 } from '../../../app/api/appointmentApi.js';
-import { STATUS_META, STATUS_FLOW } from '../../../constants/appointmentStatus.js';
+import { STATUS_META, STATUS_FLOW, STATUS } from '../../../constants/appointmentStatus.js';
 import { useTitle } from '../../../hooks/useTitle.js';
 import EmptyState from '../../../components/common/EmptyState.jsx';
 import { useServerError } from '../../auth/hooks.js';
@@ -13,12 +14,46 @@ import type { Appointment, AppointmentStatus } from '../../../types/index.js';
 
 const { Title, Paragraph } = Typography;
 
+const STATUS_OPTIONS = Object.values(STATUS).map((value) => ({
+  value,
+  label: STATUS_META[value]?.label ?? value,
+}));
+
+function parseAppointmentStatus(val: string | null): AppointmentStatus | undefined {
+  if (!val) return undefined;
+  return Object.values(STATUS).includes(val as AppointmentStatus) ? (val as AppointmentStatus) : undefined;
+}
+
 export default function DoctorSchedulePage() {
   useTitle('My schedule');
+  const [searchParams, setSearchParams] = useSearchParams();
   const { message } = AntApp.useApp();
   const serverError = useServerError();
-  const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useListDoctorAppointmentsQuery({ page, limit: 10 });
+
+  const page = Number(searchParams.get('page')) || 1;
+  const dateStr = searchParams.get('date') ?? undefined;
+  const status = parseAppointmentStatus(searchParams.get('status'));
+
+  const updateParams = (newParams: Record<string, string | number | undefined | null>) => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      Object.entries(newParams).forEach(([key, val]) => {
+        if (val === undefined || val === null || val === '') {
+          updated.delete(key);
+        } else {
+          updated.set(key, String(val));
+        }
+      });
+      return updated;
+    }, { replace: true });
+  };
+
+  const { data, isLoading, error } = useListDoctorAppointmentsQuery({
+    page,
+    limit: 10,
+    date: dateStr || undefined,
+    status: status || undefined,
+  });
   const [manage, { isLoading: managing }] = useManageAppointmentMutation();
   const [cancel, { isLoading: cancelling }] = useCancelAppointmentMutation();
 
@@ -41,13 +76,30 @@ export default function DoctorSchedulePage() {
   return (
     <div>
       <Title level={3} style={{ marginTop: 0 }}>My schedule</Title>
-      <Paragraph type="secondary">Act on each appointment. Completed and cancelled rows are archived automatically.</Paragraph>
+      <Paragraph type="secondary">Act on each appointment. Filter by date or status.</Paragraph>
 
       <Card loading={isLoading}>
+        <Space style={{ marginBottom: 16, width: '100%', gap: 12 }} wrap>
+          <DatePicker
+            placeholder="Filter by date"
+            style={{ width: 180 }}
+            value={dateStr ? dayjs(dateStr) : null}
+            onChange={(_, dateStrVal) => updateParams({ date: (dateStrVal as string) || undefined, page: 1 })}
+          />
+          <Select
+            allowClear
+            placeholder="Filter by status"
+            style={{ width: 180 }}
+            value={status}
+            onChange={(v) => updateParams({ status: v || undefined, page: 1 })}
+            options={STATUS_OPTIONS}
+          />
+        </Space>
+
         {error ? (
           <Paragraph type="danger">Couldn't load schedule.</Paragraph>
         ) : items.length === 0 ? (
-          <EmptyState description="No appointments yet." />
+          <EmptyState description="No appointments match your filters." />
         ) : (
           <List<Appointment>
             dataSource={items}
@@ -55,7 +107,7 @@ export default function DoctorSchedulePage() {
               current: page,
               pageSize: 10,
               total: data?.total ?? items.length,
-              onChange: (p) => setPage(p),
+              onChange: (p) => updateParams({ page: p }),
               showSizeChanger: false,
               hideOnSinglePage: true,
             }}

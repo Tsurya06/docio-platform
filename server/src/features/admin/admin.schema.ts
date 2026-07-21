@@ -4,6 +4,7 @@ import { APPOINTMENT_STATUS } from '../appointment/appointment.model.js';
 export const listDoctorsSchema = {
   query: z.object({
     isApproved: z.enum(['true', 'false']).optional(),
+    isActive: z.enum(['true', 'false']).optional(),
     specialization: z.string().trim().max(100).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(200).default(20),
@@ -19,6 +20,7 @@ export const manageDoctorSchema = {
 export const listPatientsSchema = {
   query: z.object({
     search: z.string().trim().max(100).optional(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(200).default(20),
   }),
@@ -29,7 +31,15 @@ export const listAppointmentsSchema = {
     status: z.preprocess(
       (v) => {
         if (v === undefined || v === null || v === '') return undefined;
-        return Array.isArray(v) ? v : [v];
+        if (typeof v === 'string') {
+          return v.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+        if (Array.isArray(v)) {
+          return v
+            .flatMap((item) => (typeof item === 'string' ? item.split(',').map((s) => s.trim()) : item))
+            .filter(Boolean);
+        }
+        return v;
       },
       z.array(z.enum(APPOINTMENT_STATUS as any as [string, ...string[]])).optional(),
     ),

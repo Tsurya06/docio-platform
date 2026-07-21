@@ -71,6 +71,30 @@ export interface WorkingHours {
   end: string;
 }
 
+export interface PublicDoctorUser {
+  _id: string;
+  firstName: string;
+  lastName?: string;
+  avatar?: string;
+  email?: string;
+}
+
+export interface PublicDoctorProfile {
+  _id: string;
+  user?: PublicDoctorUser | null;
+  specialization?: string;
+  qualifications: string[];
+  experienceYears?: number | null;
+  consultationFee?: number;
+  bio?: string | null;
+  avatar?: string | null;
+  rating?: number;
+  totalAppointments?: number;
+  workingDays: WeekDay[];
+  workingHours: WorkingHours;
+  slotDuration: number;
+}
+
 export interface DoctorProfile {
   _id: string;
   user: User;

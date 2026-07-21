@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Card, Table, Tag, Typography, Button, Space, App as AntApp } from 'antd';
+import { Card, Table, Tag, Typography, Button, Space, App as AntApp, Select, Input } from 'antd';
+import { useSearchParams } from 'react-router-dom';
 import { useListDoctorsQuery, useManageDoctorMutation } from '../../../app/api/adminApi.js';
 import { useTitle } from '../../../hooks/useTitle.js';
 import { useServerError } from '../../auth/hooks.js';
+import { useDebounce } from '../../../hooks/useDebounce.js';
 import EmptyState from '../../../components/common/EmptyState.jsx';
 import type { DoctorProfile } from '../../../types/index.js';
 
@@ -10,10 +11,37 @@ const { Title, Paragraph } = Typography;
 
 export default function AdminDoctorsPage() {
   useTitle('Doctors');
+  const [searchParams, setSearchParams] = useSearchParams();
   const { message } = AntApp.useApp();
   const serverError = useServerError();
-  const [page, setPage] = useState(1);
-  const { data, isLoading, error, refetch } = useListDoctorsQuery({ page, limit: 10 });
+
+  const page = Number(searchParams.get('page')) || 1;
+  const isApproved = searchParams.get('isApproved') ?? undefined;
+  const isActive = searchParams.get('isActive') ?? undefined;
+  const specialization = searchParams.get('specialization') ?? '';
+  const debouncedSpec = useDebounce(specialization, 300);
+
+  const updateParams = (newParams: Record<string, string | number | undefined | null>) => {
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      Object.entries(newParams).forEach(([key, val]) => {
+        if (val === undefined || val === null || val === '') {
+          updated.delete(key);
+        } else {
+          updated.set(key, String(val));
+        }
+      });
+      return updated;
+    }, { replace: true });
+  };
+
+  const { data, isLoading, error, refetch } = useListDoctorsQuery({
+    page,
+    limit: 10,
+    isApproved: isApproved || undefined,
+    isActive: isActive || undefined,
+    specialization: debouncedSpec || undefined,
+  });
   const [manage, { isLoading: acting }] = useManageDoctorMutation();
 
   const items = data?.data ?? [];
@@ -34,6 +62,37 @@ export default function AdminDoctorsPage() {
       <Paragraph type="secondary">Approve new doctors, reject spam, or deactivate abusive accounts.</Paragraph>
 
       <Card>
+        <Space style={{ marginBottom: 16, width: '100%', gap: 12 }} wrap>
+          <Select
+            allowClear
+            placeholder="Filter by approval"
+            style={{ width: 160 }}
+            value={isApproved}
+            onChange={(v) => updateParams({ isApproved: v || undefined, page: 1 })}
+            options={[
+              { value: 'true', label: 'Approved' },
+              { value: 'false', label: 'Pending' },
+            ]}
+          />
+          <Select
+            allowClear
+            placeholder="Filter by status"
+            style={{ width: 160 }}
+            value={isActive}
+            onChange={(v) => updateParams({ isActive: v || undefined, page: 1 })}
+            options={[
+              { value: 'true', label: 'Active' },
+              { value: 'false', label: 'Inactive' },
+            ]}
+          />
+          <Input
+            allowClear
+            placeholder="Search by specialization"
+            style={{ width: 240 }}
+            value={specialization}
+            onChange={(e) => updateParams({ specialization: e.target.value, page: 1 })}
+          />
+        </Space>
         <Table<DoctorProfile>
           rowKey="_id"
           loading={isLoading}
@@ -42,7 +101,7 @@ export default function AdminDoctorsPage() {
             current: page,
             pageSize: 10,
             total,
-            onChange: (p) => setPage(p),
+            onChange: (p) => updateParams({ page: p }),
             showSizeChanger: false,
           }}
           locale={{
